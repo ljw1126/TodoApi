@@ -6,19 +6,19 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+var todoItems = app.MapGroup("/todoitems");
 
 // 전체 아이템 조회
-app.MapGet("/todoitems", async (TodoDb db) => 
+todoItems.MapGet("/", async (TodoDb db) => 
     await db.Todos.ToListAsync());
 
 // IsComplete가 true 인 경우만 조회
-app.MapGet("/todoItems/complete", async (TodoDb db) =>
+todoItems.MapGet("/complete", async (TodoDb db) =>
     await db.Todos.Where(t => t.IsComplete).ToListAsync()
 );
 
 // id 단건 조회
-app.MapGet("/todoItems/{id}", async (int id, TodoDb db) =>
+todoItems.MapGet("/{id}", async (int id, TodoDb db) =>
     await db.Todos.FindAsync(id)
         is Todo todo
          ? Results.Ok(todo)
@@ -26,14 +26,14 @@ app.MapGet("/todoItems/{id}", async (int id, TodoDb db) =>
 );
 
 // $는 백틱과 비슷, Location 통해 리다이렉트
-app.MapPost("/todoitems", async (Todo todo, TodoDb db) => {
+todoItems.MapPost("/", async (Todo todo, TodoDb db) => {
     db.Todos.Add(todo);
     await db.SaveChangesAsync();
 
     return Results.Created($"/todoitems/{todo.Id}", todo);
 });
 
-app.MapPut("/todoitems/{id}", async (int id, Todo inputTodo, TodoDb db) =>
+todoItems.MapPut("/{id}", async (int id, Todo inputTodo, TodoDb db) =>
 {
     var todo = await db.Todos.FindAsync(id);
 
@@ -47,7 +47,7 @@ app.MapPut("/todoitems/{id}", async (int id, Todo inputTodo, TodoDb db) =>
     return Results.NoContent();
 });
 
-app.MapDelete("/todoitems/{id}", async (int id, TodoDb db) =>
+todoItems.MapDelete("/{id}", async (int id, TodoDb db) =>
 {
        if(await db.Todos.FindAsync(id) is Todo todo)
     {

@@ -1,11 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using TodoApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<TodoApi.Models.TodoContext>(opt =>
-   opt.UseInMemoryDatabase("TodoList"));
+builder.Services.AddRepositories(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

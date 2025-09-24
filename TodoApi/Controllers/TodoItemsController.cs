@@ -1,58 +1,44 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TodoApi.Models;
-using Microsoft.EntityFrameworkCore;
+using TodoApi.Services;
 
 namespace TodoApi.Controllers
 {
-    [Route("api/[controller]")] // 무슨 의미 ??
+    [Route("api/[controller]")]
     [ApiController]
     public class TodoItemsController : ControllerBase
     {
-        private readonly TodoContext _context; // 왜 이렇게 ??
+        private readonly TodoItemService _service;
 
-        // 생성자 단축키 (crtl + .)
-        public TodoItemsController(TodoContext context)
+        public TodoItemsController(TodoItemService service)
         {
-            _context = context;
+            _service = service;
         }
 
         // Get: api/TodoItems
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetTodoItems()
         {
-            return await _context.TodoItems
-                .Select(x => ItemToDto(x))
-                .ToListAsync();
+            var todoItems = await _service.GetAllAsync();
+            var result = todoItems.ConvertAll(x => ItemToDto(x));
+            return Ok(result);
         }
 
         // GET: api/TodoItems/5
         [HttpGet("{id}")]
         public async Task<ActionResult<TodoItemDTO>> GetTodoItem(long id)
         {
-            var todoItem = await _context.TodoItems.FindAsync(id);
-
-            if(todoItem == null)
-            {
-                return NotFound();
-            }
-
-            return ItemToDto(todoItem);
+            var todoItem = await _service.GetByIdAsync(id);
+            return todoItem == null
+                ? NotFound()
+                : Ok(ItemToDto(todoItem));
         }
 
         [HttpPost]
         public async Task<ActionResult<TodoItemDTO>> PostTodoItem(TodoItemDTO todoItemDTO)
         {
-            // 생성자 초기화 하는 방식 ..
-            var todoItem = new TodoItem
-            {
-                Name = todoItemDTO.Name,
-                IsComplete = todoItemDTO.IsComplete
-            };
+            var todoItem = await _service.CreateAsync(todoItemDTO);
 
-            _context.TodoItems.Add(todoItem);
-            await _context.SaveChangesAsync();
-
-            // CreatedAtAction ??
             return CreatedAtAction(
                 nameof(GetTodoItem),
                 new { id = todoItem.Id },
@@ -64,49 +50,32 @@ namespace TodoApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTodoItem(long id, TodoItemDTO todoItemDTO)
         {
-            if (id != todoItemDTO.Id)
+            try
+            {
+                await _service.UpdateAsync(id, todoItemDTO);
+                return NoContent();
+            }
+            catch (ArgumentException)
             {
                 return BadRequest();
             }
-
-            var todoItem = await _context.TodoItems.FindAsync(id);
-            if (todoItem == null)
+            catch (KeyNotFoundException)
             {
                 return NotFound();
             }
-
-            todoItem.Name = todoItemDTO.Name;
-            todoItem.IsComplete = todoItemDTO.IsComplete;
-
-            // when ??
-            try
+            catch (ApplicationException)
             {
-                await _context.SaveChangesAsync();
+                return Conflict();
             }
-            catch (DbUpdateConcurrencyException) when (!TodoItemExists(id))
-            {
-                return NotFound();
-            }
-
-            return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTodoItem(long id)
         {
-            var todoItem = await _context.TodoItems.FindAsync(id);
-            if(todoItem == null)
-            {
-                return NotFound();
-            }
-
-            _context.TodoItems.Remove(todoItem);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            var result = await _service.DeleteAsync(id);
+            return result == 0 ? NotFound() : NoContent();
         }
 
-        private bool TodoItemExists(long id) => _context.TodoItems.Any(el => el.Id == id);
 
         // 람다에 리터럴 방식으로 초기화가 가능
         private static TodoItemDTO ItemToDto(TodoItem todoItem) =>

@@ -1,4 +1,4 @@
-@TodoApi_HostAddress = https://localhost:7249
+@TodoApi_HostAddress = https://localhost:7249/api
 
 Post {{TodoApi_HostAddress}}/todoitems
 Content-Type: application/json
@@ -17,6 +17,7 @@ Put {{TodoApi_HostAddress}}/todoitems/1
 Content-Type: application/json
 
 {
+  "id" : 1, 
   "name": "feed fish",
   "isComplete": false
 }

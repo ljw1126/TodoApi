@@ -6,38 +6,32 @@ namespace TodoApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TodoItemsController : ControllerBase
+    public class TodoItemsController(TodoItemService service) : ControllerBase
     {
-        private readonly TodoItemService _service;
-
-        public TodoItemsController(TodoItemService service)
-        {
-            _service = service;
-        }
 
         // Get: api/TodoItems
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetTodoItems()
+        public async Task<ActionResult<IEnumerable<TodoItemDto>>> GetTodoItems()
         {
-            var todoItems = await _service.GetAllAsync();
+            var todoItems = await service.GetAllAsync();
             var result = todoItems.ConvertAll(x => ItemToDto(x));
             return Ok(result);
         }
 
         // GET: api/TodoItems/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TodoItemDTO>> GetTodoItem(long id)
+        public async Task<ActionResult<TodoItemDto>> GetTodoItem(long id)
         {
-            var todoItem = await _service.GetByIdAsync(id);
+            var todoItem = await service.GetByIdAsync(id);
             return todoItem == null
                 ? NotFound()
                 : Ok(ItemToDto(todoItem));
         }
 
         [HttpPost]
-        public async Task<ActionResult<TodoItemDTO>> PostTodoItem(TodoItemDTO todoItemDTO)
+        public async Task<ActionResult<TodoItemDto>> PostTodoItem(TodoItemDto todoItemDTO)
         {
-            var todoItem = await _service.CreateAsync(todoItemDTO);
+            var todoItem = await service.CreateAsync(todoItemDTO);
 
             return CreatedAtAction(
                 nameof(GetTodoItem),
@@ -48,11 +42,11 @@ namespace TodoApi.Controllers
         // PUT: api/TodoItems/5
         // IActionResult ??
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTodoItem(long id, TodoItemDTO todoItemDTO)
+        public async Task<IActionResult> PutTodoItem(long id, TodoItemDto todoItemDTO)
         {
             try
             {
-                await _service.UpdateAsync(id, todoItemDTO);
+                await service.UpdateAsync(id, todoItemDTO);
                 return NoContent();
             }
             catch (ArgumentException)
@@ -72,19 +66,14 @@ namespace TodoApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTodoItem(long id)
         {
-            var result = await _service.DeleteAsync(id);
+            var result = await service.DeleteAsync(id);
             return result == 0 ? NotFound() : NoContent();
         }
 
 
         // 람다에 리터럴 방식으로 초기화가 가능
-        private static TodoItemDTO ItemToDto(TodoItem todoItem) =>
-            new TodoItemDTO
-            {
-                Id = todoItem.Id,
-                Name = todoItem.Name,
-                IsComplete = todoItem.IsComplete
-            };
+        private static TodoItemDto ItemToDto(TodoItem todoItem) =>
+            new(todoItem.Id, todoItem.Name, todoItem.IsComplete);
 
     }
 }

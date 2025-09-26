@@ -4,16 +4,9 @@ using TodoApi.Repositories;
 
 namespace TodoApi.Services
 {
-    public class TodoItemService
+    public class TodoItemService(ITodoItemRepository repository)
     {
-        private readonly ITodoItemRepository _repository;
-
-        public TodoItemService(ITodoItemRepository repository)
-        {
-            _repository = repository;
-        }
-
-        public async Task<TodoItem> CreateAsync(TodoItemDTO todoItemDTO)
+        public async Task<TodoItem> CreateAsync(TodoItemDto todoItemDTO)
         {
             var todoItem = new TodoItem
             {
@@ -21,17 +14,17 @@ namespace TodoApi.Services
                 IsComplete = todoItemDTO.IsComplete
             };
 
-            return await _repository.CreateAsync(todoItem);
+            return await repository.CreateAsync(todoItem);
         }
 
-        public async Task UpdateAsync(long id, TodoItemDTO todoItemDTO)
+        public async Task UpdateAsync(long id, TodoItemDto todoItemDTO)
         {
             if (id != todoItemDTO.Id)
             {
                 throw new ArgumentException();
             }
 
-            var todoItem = await _repository.GetByIdAsync(id);
+            var todoItem = await repository.GetByIdAsync(id);
             if (todoItem == null)
             {
                 throw new KeyNotFoundException();
@@ -42,7 +35,7 @@ namespace TodoApi.Services
 
             try
             {
-                await _repository.UpdateAsync();
+                await repository.UpdateAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -52,23 +45,23 @@ namespace TodoApi.Services
 
         public async Task<int> DeleteAsync(long id)
         {
-            var todoItem = await _repository.GetByIdAsync(id);
+            var todoItem = await repository.GetByIdAsync(id);
             if (todoItem == null)
             {
                 return 0;
             }
 
-            return await _repository.DeleteAsync(todoItem);
+            return await repository.DeleteAsync(todoItem);
         }
 
         public async Task<List<TodoItem>> GetAllAsync()
         {
-            return await _repository.GetAllAsync();
+            return await repository.GetAllAsync();
         }
 
         public async Task<TodoItem?> GetByIdAsync(long id)
         {
-            return await _repository.GetByIdAsync(id);
+            return await repository.GetByIdAsync(id);
         }
     }
 }
